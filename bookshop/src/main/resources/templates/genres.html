@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<title>Genres:</title>
+</head>
+<body>
+	<div th:each="genre : ${genres}" th:text=${genre.name}>1</div>
+</body>
+</html>
