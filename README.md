@@ -1,4 +1,5 @@
 # Book Shop - Microservices Architecture
+# This is a pet project. Some features were not implemented or will be implemented in the future!!!
 
 ## Overview
 
