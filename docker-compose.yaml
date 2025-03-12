@@ -1,0 +1,463 @@
+services:
+
+#  read:
+#    image: grafana/loki:latest
+#    command: "-config.file=/etc/loki/config.yaml -target=read"
+#    ports:
+#      - 3101:3100
+#      - 7946
+#      - 9095
+#    volumes:
+#      - ./observability/loki/loki-config.yaml:/etc/loki/config.yaml
+#    depends_on:
+#      - minio
+#    healthcheck:
+#      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1" ]
+#      interval: 10s
+#      timeout: 5s
+#      retries: 5
+#    networks: &loki-dns
+#      bookshop:
+#        aliases:
+#          - loki
+#
+#  write:
+#    image: grafana/loki:latest
+#    command: "-config.file=/etc/loki/config.yaml -target=write"
+#    ports:
+#      - 3102:3100
+#      - 7946
+#      - 9095
+#    volumes:
+#      - ./observability/loki/loki-config.yaml:/etc/loki/config.yaml
+#    healthcheck:
+#      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1" ]
+#      interval: 10s
+#      timeout: 5s
+#      retries: 5
+#    depends_on:
+#      - minio
+#    networks:
+#      <<: *loki-dns
+#
+#  alloy:
+#    image: grafana/alloy:latest
+#    volumes:
+#      - ./observability/alloy/alloy-local-config.yaml:/etc/alloy/config.alloy:ro
+#      - /var/run/docker.sock:/var/run/docker.sock
+#    command: run --server.http.listen-addr=0.0.0.0:12345 --storage.path=/var/lib/alloy/data /etc/alloy/config.alloy
+#    ports:
+#      - 12345:12345
+#    depends_on:
+#      - gateway
+#    networks:
+#      - bookshop
+#
+#  minio:
+#    image: minio/minio
+#    entrypoint:
+#      - sh
+#      - -euc
+#      - |
+#        mkdir -p /data/loki-data && \
+#        mkdir -p /data/loki-ruler && \
+#        minio server /data
+#    environment:
+#      - MINIO_ROOT_USER=loki
+#      - MINIO_ROOT_PASSWORD=supersecret
+#      - MINIO_PROMETHEUS_AUTH_TYPE=public
+#      - MINIO_UPDATE=off
+#    ports:
+#      - 9000
+#    volumes:
+#      - ./.data/minio:/data
+#    healthcheck:
+#      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
+#      interval: 15s
+#      timeout: 20s
+#      retries: 5
+#      start_period: 30s
+#    networks:
+#      - bookshop
+#
+#  prometheus:
+#    image: prom/prometheus:latest
+#    container_name: prometheus
+#    ports:
+#      - 9090:9090
+#    volumes:
+#      - ./observability/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yml
+#    depends_on:
+#      - gateway
+#    healthcheck:
+#      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9090/ || exit 1" ]
+#      interval: 10s
+#      timeout: 5s
+#      retries: 5
+#    networks:
+#      - bookshop
+#
+#  tempo:
+#    image: grafana/tempo:latest
+#    container_name: tempo
+#    command: "-config.file=/etc/tempo/tempo-config.yaml"
+#    ports:
+#      - 3110:3100
+#      - 4317:4317
+#      - 4318:4318
+#    volumes:
+#      - ./observability/tempo/tempo.yaml:/etc/tempo/tempo-config.yaml
+#    networks:
+#      - bookshop
+#
+#  grafana:
+#    image: grafana/grafana:latest
+#    environment:
+#      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+#      - GF_AUTH_ANONYMOUS_ENABLED=true
+#      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+#    depends_on:
+#      - gateway
+#    entrypoint:
+#      - sh
+#      - -euc
+#      - |
+#        /run.sh
+#    ports:
+#      - "3000:3000"
+#    volumes:
+#      - ./observability/grafana/datasource.yaml:/etc/grafana/provisioning/datasources/datasource.yaml
+#    healthcheck:
+#      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1" ]
+#      interval: 10s
+#      timeout: 5s
+#      retries: 5
+#    networks:
+#      - bookshop
+#
+#  backend:
+#    image: grafana/loki:latest
+#    volumes:
+#      - ./observability/loki/loki-config.yaml:/etc/loki/config.yaml
+#    ports:
+#      - "3100"
+#      - "7946"
+#    command: "-config.file=/etc/loki/config.yaml -target=backend -legacy-read-mode=false"
+#    depends_on:
+#      - gateway
+#    networks:
+#      - bookshop
+#
+#  gateway:
+#    image: nginx:latest
+#    depends_on:
+#      - read
+#      - write
+#    entrypoint:
+#      - sh
+#      - -euc
+#      - |
+#        cat <<EOF > /etc/nginx/nginx.conf
+#        user  nginx;
+#        worker_processes  5;  ## Default: 1
+#
+#        events {
+#          worker_connections   1000;
+#        }
+#
+#        http {
+#          resolver 127.0.0.11;
+#
+#          server {
+#            listen             3100;
+#
+#            location = / {
+#              return 200 'OK';
+#              auth_basic off;
+#            }
+#
+#            location = /api/prom/push {
+#              proxy_pass       http://write:3100\$$request_uri;
+#            }
+#
+#            location = /api/prom/tail {
+#              proxy_pass       http://read:3100\$$request_uri;
+#              proxy_set_header Upgrade \$$http_upgrade;
+#              proxy_set_header Connection "upgrade";
+#            }
+#
+#            location ~ /api/prom/.* {
+#              proxy_pass       http://read:3100\$$request_uri;
+#            }
+#
+#            location = /loki/api/v1/push {
+#              proxy_pass       http://write:3100\$$request_uri;
+#            }
+#
+#            location = /loki/api/v1/tail {
+#              proxy_pass       http://read:3100\$$request_uri;
+#              proxy_set_header Upgrade \$$http_upgrade;
+#              proxy_set_header Connection "upgrade";
+#            }
+#
+#            location ~ /loki/api/.* {
+#              proxy_pass       http://read:3100\$$request_uri;
+#            }
+#          }
+#        }
+#        EOF
+#        /docker-entrypoint.sh nginx -g "daemon off;"
+#    ports:
+#      - "3100:3100"
+#    healthcheck:
+#      test: [ "CMD", "curl", "-f", "http://localhost:3100/" ]
+#      interval: 10s
+#      timeout: 5s
+#      retries: 5
+#    networks:
+#      - bookshop
+
+  postgres:
+    image: postgres:17
+    container_name: postgres
+    ports:
+      - 5432:5432
+    volumes:
+      - ./init_schema.sql:/docker-entrypoint-initdb.d/init_schema.sql
+    environment:
+      POSTGRES_DB: bookshop
+      POSTGRES_PASSWORD: mysecretpassword
+    networks:
+      - bookshop
+    deploy:
+      resources:
+        limits:
+          memory: 500m
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  config:
+    image: bookshop/bookshop-config:v8
+    container_name: config-ms
+    ports:
+      - 9001:9001
+    healthcheck:
+      test: curl --fail http://config:9001/actuator/health || exit 1
+      interval: 10s
+      timeout: 10s
+      retries: 3
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 500m
+    networks:
+      - bookshop
+    environment:
+#      OTEL_SERVICE_NAME: barbershop-config
+#      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4317
+#      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+#      OTEL_METRICS_EXPORTER: none
+
+  eureka:
+    image: bookshop/eurekaserver:v8
+    container_name: eureka-ms
+    ports:
+      - 8085:8085
+    deploy:
+      resources:
+        limits:
+          memory: 500m
+    healthcheck:
+      test: curl --fail http://eureka:8085/actuator/health || exit 1
+      interval: 3s
+      timeout: 10s
+      retries: 10
+    depends_on:
+      config:
+        condition: service_healthy
+    networks:
+      - bookshop
+    environment:
+      SPRING_APP_NAME: barbershop-eureka
+      SPRING_CONFIG_IMPORT: configserver:http://config:9001
+#      OTEL_SERVICE_NAME: barbershop-eureka
+#      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4317
+#      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+#      OTEL_METRICS_EXPORTER: none
+
+  test:
+    image: bookshop/bookshop-test:v8
+    container_name: test-ms
+    ports:
+      - 8080:8080
+    healthcheck:
+      test: curl --fail http://test:8080/actuator/health || exit 1
+      interval: 5s
+      timeout: 20s
+      retries: 20
+    depends_on:
+      eureka:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 500m
+    networks:
+      - bookshop
+    environment:
+      SPRING_PROFILES_ACTIVE: qa
+      SPRING_APP_NAME: bookshop-test
+      SPRING_CONFIG_IMPORT: configserver:http://config:9001
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/bookshop
+      SPRING_LIQUIBASE_URL: jdbc:postgresql://postgres:5432/bookshop
+      SPRING_LIQUIBASE_USER: postgres
+      SPRING_LIQUIBASE_PASSWORD: mysecretpassword
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:8085/eureka
+#      JAVA_TOOL_OPTIONS: -javaagent:/app/libs/opentelemetry-javaagent-2.6.0.jar
+#      OTEL_SERVICE_NAME: barbershop-test
+#      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4317
+#      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+#      OTEL_METRICS_EXPORTER: none
+
+  books:
+    image: bookshop/bookshop-book:v8
+    container_name: book-ms
+    ports:
+      - 8081:8081
+    deploy:
+      resources:
+        limits:
+          memory: 500m
+    healthcheck:
+      test: curl --fail http://books:8081/actuator/health || exit 1
+      interval: 5s
+      timeout: 20s
+      retries: 20
+    depends_on:
+      eureka:
+        condition: service_healthy
+    networks:
+      - bookshop
+    environment:
+      SPRING_APP_NAME: bookshop-book
+      SPRING_CONFIG_IMPORT: configserver:http://config:9001
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/bookshop
+      SPRING_LIQUIBASE_URL: jdbc:postgresql://postgres:5432/bookshop
+      SPRING_LIQUIBASE_USER: postgres
+      SPRING_LIQUIBASE_PASSWORD: mysecretpassword
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:8085/eureka
+#      JAVA_TOOL_OPTIONS: "-javaagent:/app/libs/opentelemetry-javaagent-2.6.0.jar"
+#      OTEL_SERVICE_NAME: barbershop-book
+#      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4317
+#      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+#      OTEL_METRICS_EXPORTER: none
+
+  #  order:
+  #    image: bookshop/bookshop-order:v7
+  #    container_name: order-ms
+  #    ports:
+  #      - 8083:8083
+  #    deploy:
+  #      resources:
+  #        limits:
+  #          memory: 500m
+  #    healthcheck:
+  #      test: curl --fail http://order:8083/actuator/health || exit 1
+  #      interval: 5s
+  #      timeout: 20s
+  #      retries: 40
+  #    depends_on:
+  #      eureka:
+  #        condition: service_healthy
+  #    networks:
+  #      - bookshop
+  #    environment:
+  #      SPRING_APP_NAME: bookshop-order
+  #      SPRING_CONFIG_IMPORT: configserver:http://config:9001
+  #      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/bookshop
+  #      SPRING_LIQUIBASE_URL: jdbc:postgresql://postgres:5432/bookshop
+  #      SPRING_LIQUIBASE_USER: postgres
+  #      SPRING_LIQUIBASE_PASSWORD: mysecretpassword
+  #      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:8085/eureka
+  #      JAVA_TOOL_OPTIONS: "-javaagent:/app/libs/opentelemetry-javaagent-2.6.0.jar"
+  #      OTEL_SERVICE_NAME: barbershop-book
+  #      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4317
+  #      OTEL_METRICS_EXPORTER: none
+  #
+  #  user:
+  #    image: bookshop/bookshop-user:v7
+  #    container_name: user-ms
+  #    ports:
+  #      - 8082:8082
+  #    deploy:
+  #      resources:
+  #        limits:
+  #          memory: 500m
+  #    healthcheck:
+  #      test: curl --fail http://user:8082/actuator/health || exit 1
+  #      interval: 5s
+  #      timeout: 20s
+  #      retries: 20
+  #    depends_on:
+  #      eureka:
+  #        condition: service_healthy
+  #    environment:
+  #      SPRING_APP_NAME: bookshop-user
+  #      SPRING_CONFIG_IMPORT: configserver:http://config:9001
+  #      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/bookshop
+  #      SPRING_LIQUIBASE_URL: jdbc:postgresql://postgres:5432/bookshop
+  #      SPRING_LIQUIBASE_USER: postgres
+  #      SPRING_LIQUIBASE_PASSWORD: mysecretpassword
+  #      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:8085/eureka
+  #      JAVA_TOOL_OPTIONS: "-javaagent:/app/libs/opentelemetry-javaagent-2.6.0.jar"
+  #      OTEL_SERVICE_NAME: barbershop-book
+  #      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4317
+  #      OTEL_METRICS_EXPORTER: none
+  #    networks:
+  #      - bookshop
+
+  bookshop-gateway:
+    image: bookshop/bookshop-gateway:v8
+    container_name: gateway-ms
+    ports:
+      - 8084:8084
+    healthcheck:
+      test: curl --fail http://bookshop-gateway:8084/actuator/health || exit 1
+      interval: 5s
+      timeout: 20s
+      retries: 20
+    depends_on:
+      test:
+        condition: service_healthy
+      books:
+        condition: service_healthy
+    #      order:
+    #        condition: service_healthy
+    #      user:
+    #        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 500m
+    networks:
+      - bookshop
+    environment:
+      SPRING_APP_NAME: bookshop-gateway
+      SPRING_CONFIG_IMPORT: configserver:http://config:9001
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:8085/eureka
+#      JAVA_TOOL_OPTIONS: "-javaagent:/app/libs/opentelemetry-javaagent-2.6.0.jar"
+#      OTEL_SERVICE_NAME: barbershop-gateway
+#      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4317
+#      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+#      OTEL_METRICS_EXPORTER: none
+
+networks:
+  bookshop:
+    driver: bridge

@@ -1,0 +1,38 @@
+eureka:
+  instance:
+    hostname: localhost
+  client:
+    fetchRegistry: false
+    registerWithEureka: false
+    serviceUrl:
+      defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka
+
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*" # expose all endpoints(refresh,health,info...)
+  health:
+    livenessstate:
+      enabled: true
+    readystatestate:
+      enabled: true
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+server:
+  port: 8085
+
+logging:
+  level:
+    com:
+      libra:
+        eurekaserver: DEBUG
+  pattern:
+    level: "%5p [${spring.application.name},%X{trace_id},%X{span_id}]"

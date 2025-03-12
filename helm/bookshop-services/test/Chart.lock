@@ -1,0 +1,6 @@
+dependencies:
+- name: bookshop-common
+  repository: file://../../bookshop-common
+  version: 0.1.0
+digest: sha256:490041298dbe3404de6d7348e5f0d25094ef2756ff0ed46b4f32cbe358f75291
+generated: "2025-01-12T20:05:59.175655+03:00"

@@ -1,0 +1,22 @@
+deploymentName: config
+serviceName: config
+appLabel: config
+appName: config
+
+replicaCount: 1
+
+image: bookshop/bookshop-config
+imageTag: v8
+
+containerPort: 9001
+
+service:
+  type: LoadBalancer
+  port: 9001
+  targetPort: 9001
+
+profiles_enabled: false
+appName_enabled: true
+config_enabled: false
+eureka_enabled: false
+db_enabled: false

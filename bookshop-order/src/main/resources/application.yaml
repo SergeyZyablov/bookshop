@@ -1,0 +1,7 @@
+spring:
+  application:
+    name: bookshop-order
+  profiles:
+    active: default
+  config:
+    import: optional:configserver:http://localhost:9001/

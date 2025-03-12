@@ -1,0 +1,47 @@
+server:
+  port: 8084
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8085/eureka/ # URL Eureka Server
+    fetch-registry: true   # Получать информацию о других сервисах (по умолчанию true)
+    register-with-eureka: true # Регистрироваться на сервере Eureka (по умолчанию true)
+  instance:
+    prefer-ip-address: true # Использовать IP-адрес вместо hostname
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*" # expose all endpoints(refresh,health,info...)
+  health:
+    livenessstate:
+      enabled: true
+    readystatestate:
+      enabled: true
+  endpoint:
+    health:
+      probes:
+        enabled: true
+    shutdown:
+      enabled: true
+    gateway:
+      enabled: true
+  info:
+    enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+endpoints:
+  shutdown:
+    enabled: true
+
+logging:
+  level:
+    com:
+      libra:
+        bookshopgateway: DEBUG
+  pattern:
+    level: "%5p [${spring.application.name},%X{trace_id},%X{span_id}]"

@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: bookshop-demo
+  profiles:
+    active: default
+  config:
+    import: optional:configserver:http://localhost:9001/
+
+server:
+  port: 8086

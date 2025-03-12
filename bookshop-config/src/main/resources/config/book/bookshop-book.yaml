@@ -1,0 +1,70 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres # Замените на ваш URL
+    username: postgres  # Замените на ваш username
+    password: mysecretpassword  # Замените на ваш пароль
+    driver-class-name: org.postgresql.Driver
+    jpa:
+      hibernate:
+        ddl-auto: update  # Используйте "none", "update", "create", или "create-drop" в зависимости от ваших нужд
+      database-platform: org.hibernate.dialect.PostgreSQLDialect
+      show-sql: true      # Для вывода SQL запросов в лог
+      properties:
+        hibernate:
+          format_sql: true
+    hikari:
+      schema: bookshop
+  liquibase:
+    url: jdbc:postgresql://localhost:5432/postgres
+    user: postgres
+    password: mysecretpassword
+    change-log: classpath:db.changelog-master.xml
+    enabled: true
+    default-schema: bookshop
+
+server:
+  port: 8081
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8085/eureka/ # URL Eureka Server
+    fetch-registry: true   # Получать информацию о других сервисах (по умолчанию true)
+    register-with-eureka: true # Регистрироваться на сервере Eureka (по умолчанию true)
+  instance:
+    prefer-ip-address: true # Использовать IP-адрес вместо hostname
+    instance-id: ${spring.application.name}:${spring.cloud.client.hostname}:${server.port}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*" # expose all endpoints(refresh,health,info...)
+  health:
+    livenessstate:
+      enabled: true
+    readystatestate:
+      enabled: true
+  endpoint:
+    health:
+      probes:
+        enabled: true
+    shutdown:
+      enabled: true
+  info:
+    enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+endpoints:
+  shutdown:
+    enabled: true
+
+logging:
+  level:
+    com:
+      libra:
+        bookshopbook: DEBUG
+  pattern:
+    level: "%5p [${spring.application.name},%X{trace_id},%X{span_id}]"

@@ -1,0 +1,87 @@
+{{- define "common-deployment" -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.deploymentName }}
+  labels:
+    app: {{ .Values.appLabel }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.appLabel }}
+  template:
+    metadata:
+      name: {{ .Values.appLabel }}
+      labels:
+        app: {{ .Values.appLabel }}
+    spec:
+      containers:
+        - name: {{ .Values.appLabel }}
+          image: {{ .Values.image }}:{{ .Values.imageTag }}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: {{ .Values.containerPort }}
+              protocol: TCP
+          env:
+            {{- if .Values.profiles_enabled }}
+            - name: SPRING_PROFILES_ACTIVE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.global.configMapName }}
+                  key: SPRING_PROFILES_ACTIVE
+            {{- end }}
+
+            {{- if .Values.appName_enabled }}
+            - name: SPRING_APP_NAME
+              value: {{ .Values.appName }}
+            {{- end }}
+
+            {{- if .Values.config_enabled }}
+            - name: SPRING_CONFIG_IMPORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.global.configMapName }}
+                  key: SPRING_CONFIG_IMPORT
+            {{- end }}
+
+            {{- if .Values.eureka_enabled }}
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.global.configMapName }}
+                  key: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+            {{- end }}
+
+            {{- if .Values.db_enabled }}
+            - name: SPRING_DATASOURCE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.global.configMapName }}
+                  key: SPRING_DATASOURCE_URL
+            {{- end }}
+
+            {{- if .Values.db_enabled }}
+            - name: SPRING_LIQUIBASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.global.configMapName }}
+                  key: SPRING_LIQUIBASE_URL
+            {{- end }}
+
+            {{- if .Values.db_enabled }}
+            - name: SPRING_LIQUIBASE_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.global.configMapName }}
+                  key: SPRING_LIQUIBASE_USER
+            {{- end }}
+
+            {{- if .Values.db_enabled }}
+            - name: SPRING_LIQUIBASE_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.global.configMapName }}
+                  key: SPRING_LIQUIBASE_PASSWORD
+            {{- end }}
+{{- end }}

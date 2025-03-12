@@ -1,0 +1,48 @@
+spring:
+  application:
+    name: bookshop-gateway
+  config:
+    import: optional:configserver:http://localhost:9001/ # Connect to config server, in docker compose we should not
+    #use this config server or left it with optional:, otherwise it will not work
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: false # Enable discovery locator which wil share with gateway server other services
+          lowerCaseServiceId: true # Convert service id (/BOOKSHOP-BOOK) to lower case
+
+server:
+  port: 8084
+
+resilience4j:
+  circuitbreaker: # Конфигурация для механизма "circuit breaker"
+    configs:
+      default: # Задает конфигурацию по умолчанию, которая может быть применена к нескольким circuit breaker'ам
+        sliding-window-size: 10
+        # Размер скользящего окна, используемого для анализа вызовов.
+        # Circuit breaker отслеживает результаты выполнения заданного количества вызовов (10 вызовов в данном случае)
+        # и принимает решения об изменении состояния на основе этих данных.
+        # Например, 50% неудачных вызовов (по `failure-rate-threshold`) в этом окне могут привести к открытию цепи.
+
+        permitted-number-of-calls-in-half-open-state: 2
+        # Количество вызовов, разрешенных в состоянии "Half-Open" (полуоткрытое состояние).
+        # В состоянии "Half-Open" circuit breaker позволяет выполнять ограниченное количество запросов
+        # для проверки, восстановилась ли система.
+        # Если все эти вызовы успешны, circuit breaker возвращается в закрытое состояние.
+        # Если хотя бы один из вызовов завершится сбоем, circuit breaker возвращается в открытое состояние.
+
+        failure-rate-threshold: 50
+        # Порог срабатывания для переключения в открытое состояние.
+        # Если процент неудачных вызовов (ошибок или исключений) превышает 50% в пределах текущего окна (10 вызовов),
+        # circuit breaker переключается в открытое состояние.
+        # В этом состоянии все новые запросы будут немедленно отклоняться, предотвращая дальнейшую нагрузку на систему.
+
+        wait-duration-in-open-state: 5000
+        # Продолжительность времени (в миллисекундах), в течение которого circuit breaker остается в открытом состоянии.
+        # После истечения этого времени он перейдет в состояние "Half-Open" и начнет проверку,
+        # разрешая ограниченное количество вызовов (`permitted-number-of-calls-in-half-open-state`).
+        # В данном случае, 5000 миллисекунд (5 секунд).
+  timelimiter:
+    instances:
+      testMSCircuitBreaker:
+        timeoutDuration: 10s

@@ -1,0 +1,118 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres # Замените на ваш URL
+    username: postgres  # Замените на ваш username
+    password: mysecretpassword  # Замените на ваш пароль
+    driver-class-name: org.postgresql.Driver
+    jpa:
+      hibernate:
+        ddl-auto: update  # Используйте "none", "update", "create", или "create-drop" в зависимости от ваших нужд
+      database-platform: org.hibernate.dialect.PostgreSQLDialect
+      show-sql: true      # Для вывода SQL запросов в лог
+      properties:
+        hibernate:
+          format_sql: true
+    hikari:
+      schema: bookshop
+  liquibase:
+    enabled: false
+  cloud:
+    openfeign:
+      circuitbreaker:
+        enabled: true
+
+server:
+  port: 8080
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8085/eureka/ # URL Eureka Server
+    fetch-registry: true   # Получать информацию о других сервисах (по умолчанию true)
+    register-with-eureka: true # Регистрироваться на сервере Eureka (по умолчанию true)
+  instance:
+    prefer-ip-address: true # Использовать IP-адрес вместо hostname
+    instance-id: ${spring.application.name}:${spring.cloud.client.hostname}:${server.port}
+
+build:
+  version: 0.0.1
+
+test:
+  name: bookshop-test
+  version: 0.0.1
+  description: This application is for testing new features
+  environment: default
+  developers:
+    - Sergey Zyablov
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*" # expose all endpoints(refresh,health,info...)
+  health:
+    livenessstate:
+      enabled: true
+    readystatestate:
+      enabled: true
+  endpoint:
+    health:
+      probes:
+        enabled: true
+    shutdown:
+      enabled: true
+  info:
+    enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+endpoints:
+  shutdown:
+    enabled: true
+
+resilience4j:
+  circuitbreaker: # Конфигурация для механизма "circuit breaker"
+    configs:
+      default: # Задает конфигурацию по умолчанию, которая может быть применена к нескольким circuit breaker'ам
+        sliding-window-size: 10
+        # Размер скользящего окна, используемого для анализа вызовов.
+        # Circuit breaker отслеживает результаты выполнения заданного количества вызовов (10 вызовов в данном случае)
+        # и принимает решения об изменении состояния на основе этих данных.
+        # Например, 50% неудачных вызовов (по `failure-rate-threshold`) в этом окне могут привести к открытию цепи.
+
+        permitted-number-of-calls-in-half-open-state: 2
+        # Количество вызовов, разрешенных в состоянии "Half-Open" (полуоткрытое состояние).
+        # В состоянии "Half-Open" circuit breaker позволяет выполнять ограниченное количество запросов
+        # для проверки, восстановилась ли система.
+        # Если все эти вызовы успешны, circuit breaker возвращается в закрытое состояние.
+        # Если хотя бы один из вызовов завершится сбоем, circuit breaker возвращается в открытое состояние.
+
+        failure-rate-threshold: 50
+        # Порог срабатывания для переключения в открытое состояние.
+        # Если процент неудачных вызовов (ошибок или исключений) превышает 50% в пределах текущего окна (10 вызовов),
+        # circuit breaker переключается в открытое состояние.
+        # В этом состоянии все новые запросы будут немедленно отклоняться, предотвращая дальнейшую нагрузку на систему.
+
+        wait-duration-in-open-state: 5000
+        # Продолжительность времени (в миллисекундах), в течение которого circuit breaker остается в открытом состоянии.
+        # После истечения этого времени он перейдет в состояние "Half-Open" и начнет проверку,
+        # разрешая ограниченное количество вызовов (`permitted-number-of-calls-in-half-open-state`).
+        # В данном случае, 5000 миллисекунд (5 секунд).
+
+resilience4j.retry:
+  configs:
+    default:
+      max-attempts: 3
+      wait-duration:
+        seconds: 1
+      enable-exponential-backoff: true
+      exponential-backoff-multiplier: 2
+
+logging:
+  level:
+    com:
+      libra:
+        bookshoptest: DEBUG
+  pattern:
+    level: "%5p [${spring.application.name},%X{trace_id},%X{span_id}]"

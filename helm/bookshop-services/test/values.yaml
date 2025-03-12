@@ -1,0 +1,22 @@
+deploymentName: "bookshop-test"
+serviceName: "bookshop-test"
+appLabel: "bookshop-test"
+appName: "bookshop-test"
+
+replicaCount: 1
+
+image: "bookshop/bookshop-test"
+imageTag: "v8"
+
+containerPort: 8080
+
+service:
+  type: "LoadBalancer"
+  port: 8080
+  targetPort: 8080
+
+profiles_enabled: true
+appName_enabled: true
+config_enabled: true
+eureka_enabled: true
+db_enabled: true

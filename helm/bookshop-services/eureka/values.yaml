@@ -1,0 +1,22 @@
+deploymentName: eureka
+serviceName: eureka
+appLabel: eureka
+appName: eureka
+
+replicaCount: 1
+
+image: bookshop/eurekaserver
+imageTag: v8
+
+containerPort: 8085
+
+service:
+  type: LoadBalancer
+  port: 8085
+  targetPort: 8085
+
+profiles_enabled: false
+appName_enabled: true
+config_enabled: true
+eureka_enabled: false
+db_enabled: false

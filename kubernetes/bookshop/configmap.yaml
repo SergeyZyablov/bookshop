@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bookshop-config
+data:
+  EUREKA_APPLICATION_NAME: "barbershop-eureka"
+  TEST_APPLICATION_NAME: "bookshop-test"
+  BOOKS_APPLICATION_NAME: "bookshop-book"
+  ORDER_APPLICATION_NAME: "bookshop-order"
+  USERS_APPLICATION_NAME: "bookshop-user"
+  GATEWAY_APPLICATION_NAME: "bookshop-gateway"
+
+  SPRING_PROFILES_ACTIVE: "qa"
+  SPRING_CONFIG_IMPORT: "configserver:http://config:9001"
+  EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://eureka:8085/eureka"
+
+  SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres:5432/bookshop"
+  SPRING_LIQUIBASE_URL: "jdbc:postgresql://postgres:5432/bookshop"
+  SPRING_LIQUIBASE_USER: "postgres"
+  SPRING_LIQUIBASE_PASSWORD: "mysecretpassword"
+
+  POSTGRES_USER: "postgres"
+  POSTGRES_PASSWORD: "mysecretpassword"
+  POSTGRES_DB: "bookshop"
+

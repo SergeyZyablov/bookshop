@@ -1,0 +1,8 @@
+global:
+  configMapName: bookshop-config
+  activeProfile: default
+  configServerUrl: http://bookshop-config:9001
+  eurekaUrl: http://bookshop-eureka:8761/eureka
+  databaseUrl: jdbc:postgresql://postgres:5432/bookshop
+  liquibaseUser: postgres
+  liquibasePassword: mysecretpassword

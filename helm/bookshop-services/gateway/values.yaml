@@ -1,0 +1,22 @@
+deploymentName: bookshop-gateway
+serviceName: bookshop-gateway
+appLabel: bookshop-gateway
+appName: bookshop-gateway
+
+replicaCount: 1
+
+image: bookshop/bookshop-gateway
+imageTag: v8
+
+containerPort: 8084
+
+service:
+  type: LoadBalancer
+  port: 8084
+  targetPort: 8084
+
+profiles_enabled: false
+appName_enabled: true
+config_enabled: true
+eureka_enabled: true
+db_enabled: true

@@ -1,0 +1,13 @@
+{{- define "common-configmap" -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.global.configMapName }}
+data:
+  SPRING_CONFIG_IMPORT: "{{ .Values.global.configServerUrl }}"
+  EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "{{ .Values.global.eurekaUrl }}"
+  SPRING_DATASOURCE_URL: "{{ .Values.global.databaseUrl }}"
+  SPRING_LIQUIBASE_URL: "{{ .Values.global.databaseUrl }}"
+  SPRING_LIQUIBASE_USER: "{{ .Values.global.liquibaseUser }}"
+  SPRING_LIQUIBASE_PASSWORD: "{{ .Values.global.liquibasePassword }}"
+{{- end }}

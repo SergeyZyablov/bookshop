@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: barbershop-eureka
+  profiles:
+    active: default
+  config:
+    import: optional:configserver:http://localhost:9001/ # Connect to config server, in docker compose we should not
+    #use this config server or left it with optional:, otherwise it will not work
+server:
+  port: 8085
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*" # expose all endpoints(refresh,health,info...)
+  health:
+    livenessstate:
+      enabled: true
+    readystatestate:
+      enabled: true
+  endpoint:
+    health:
+      probes:
+        enabled: true

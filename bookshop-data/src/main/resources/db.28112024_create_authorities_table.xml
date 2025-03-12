@@ -1,0 +1,24 @@
+<?xml version='1.1' encoding='UTF-8' standalone='no'?>
+<databaseChangeLog xmlns='http://www.liquibase.org/xml/ns/dbchangelog'
+                   xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'
+                   xsi:schemaLocation='http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.6.xsd'>
+
+    <changeSet id="db.28112024-create-authorities-table" author="sergey.zyablov">
+        <preConditions>
+            <not>
+                <tableExists tableName="authority"/>
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE authority
+            (
+                id          SERIAL PRIMARY KEY,
+                name        VARCHAR(100) NOT NULL,
+                customer_id INT          NOT NULL,
+                modified    DATE,
+                modified_by VARCHAR,
+                CONSTRAINT fk_authority_customer FOREIGN KEY (customer_id) REFERENCES customer (id)
+            );
+        </sql>
+    </changeSet>
+</databaseChangeLog>

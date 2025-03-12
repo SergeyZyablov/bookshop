@@ -1,0 +1,42 @@
+<?xml version='1.1' encoding='UTF-8' standalone='no'?>
+<databaseChangeLog xmlns='http://www.liquibase.org/xml/ns/dbchangelog'
+                   xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'
+                   xsi:schemaLocation='http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.6.xsd'>
+
+    <changeSet id="db.18122024_create_order_table" author="sergey.zyablov">
+        <preConditions>
+            <not>
+                <and>
+                    <tableExists tableName="order"/>
+                    <tableExists tableName="order_books"/>
+                </and>
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE bookshop_order
+            (
+                id               SERIAL PRIMARY KEY,
+                order_status     VARCHAR(255) NOT NULL, -- Enum для статуса заказа
+                total_price      DECIMAL(15, 2),        -- Итоговая цена
+                customer_id      SERIAL,                -- Внешний ключ для таблицы клиентов
+                shipping_address VARCHAR(255),          -- Адрес доставки
+                payment_method   VARCHAR(255),          -- Enum для метода оплаты
+                order_date       DATE,              -- Дата создания заказа
+                delivery_date    DATE,              -- Дата доставки
+                modified    DATE,
+                modified_by VARCHAR,
+                CONSTRAINT fk_customer FOREIGN KEY (customer_id) REFERENCES customer (id)
+            );
+
+-- Промежуточная таблица для связи заказов и книг
+            CREATE TABLE order_books
+            (
+                order_id SERIAL NOT NULL,
+                book_id  SERIAL NOT NULL,
+                PRIMARY KEY (order_id, book_id),
+                CONSTRAINT fk_order FOREIGN KEY (order_id) REFERENCES bookshop_order (id) ON DELETE CASCADE,
+                CONSTRAINT fk_book FOREIGN KEY (book_id) REFERENCES book (id) ON DELETE CASCADE
+            );
+        </sql>
+    </changeSet>
+</databaseChangeLog>

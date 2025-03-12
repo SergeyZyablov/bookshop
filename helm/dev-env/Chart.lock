@@ -1,0 +1,18 @@
+dependencies:
+- name: bookshop-common
+  repository: file://../bookshop-common
+  version: 0.1.0
+- name: test
+  repository: file://../bookshop-services/test
+  version: 0.1.0
+- name: eureka
+  repository: file://../bookshop-services/eureka
+  version: 0.1.0
+- name: configserver
+  repository: file://../bookshop-services/configserver
+  version: 0.1.0
+- name: gateway
+  repository: file://../bookshop-services/gateway
+  version: 0.1.0
+digest: sha256:fc68152bde4a10f3fee149d6b14553bf55f7ff69b934d6dfac29de9bf305082a
+generated: "2025-01-12T19:57:22.342946+03:00"

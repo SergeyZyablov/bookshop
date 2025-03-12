@@ -1,0 +1,32 @@
+<?xml version='1.1' encoding='UTF-8' standalone='no'?>
+<databaseChangeLog xmlns='http://www.liquibase.org/xml/ns/dbchangelog'
+                   xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'
+                   xsi:schemaLocation='http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.6.xsd'>
+
+    <changeSet id="db-security" author="sergey.zyablov">
+        <preConditions>
+            <not>
+                <tableExists tableName="users"/>
+                <tableExists tableName="authorities"/>
+                <indexExists indexName="ix_auth_username"/>
+            </not>
+        </preConditions>
+        <sql>
+            create table users
+            (
+                username varchar(50)  not null primary key,
+                password varchar(500) not null,
+                enabled  boolean      not null
+            );
+
+            create table authorities
+            (
+                username  varchar(50) not null,
+                authority varchar(50) not null,
+                constraint fk_authorities_users foreign key (username) references users (username)
+            );
+
+            create unique index ix_auth_username on authorities (username, authority);
+        </sql>
+    </changeSet>
+</databaseChangeLog>

@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: bookshop-message
+  cloud:
+    function:
+      definition: emailBook|smsBook
+    stream:
+      bindings:
+        emailBooksmsBook-in-0: # receives messages from sendCommunication
+          destination: sendCommunication
+          group: ${spring.application.name}
+        emailBooksmsBook-out-0: # sends messages to sendCommunication
+          destination: message-send
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    connection-timeout: 10s
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+
+server:
+  port: 9091

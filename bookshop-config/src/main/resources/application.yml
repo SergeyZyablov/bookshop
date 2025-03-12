@@ -1,0 +1,39 @@
+spring:
+  application:
+    name: bookshop-config
+  profiles:
+    active: native #use when we want to use local config, otherwise use git
+  cloud:
+    config:
+      server:
+        native:
+          search-locations:
+            - classpath:/config/book
+            - classpath:/config/test
+            - classpath:/config/user
+            - classpath:/config/order
+            - classpath:/config/eureka
+            - classpath:/config/demo
+            - classpath:/config/gateway
+
+
+server:
+  port: 9001
+
+encrypt: #use for encryption
+  key: DJDJFVUURJBXVJXHBCHSDBFKGESYEZLX #key for encryption
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*" # expose all endpoints(refresh,health,info...)
+  health:
+    livenessstate:
+      enabled: true
+    readystatestate:
+      enabled: true
+  endpoint:
+    health:
+      probes:
+        enabled: true

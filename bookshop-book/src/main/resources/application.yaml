@@ -1,0 +1,45 @@
+spring:
+  application:
+    name: bookshop-book
+  profiles:
+    active: default
+  config:
+    import: optional:configserver:http://localhost:9001/ # Connect to config server, in docker compose we should not
+    #use this config server or left it with optional:, otherwise it will not work
+  cloud:
+    function:
+      definition: responseMessage
+    stream:
+      bindings:
+        emailBooksmsBook-out-0:
+          destination: sendCommunication
+        responseMessage-in-0:
+          destination: message-send
+          group: ${spring.application.name}
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: secret
+      connect-timeout: 10s
+      jedis:
+        pool:
+          enabled: true
+
+server:
+  port: 8081
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*" # expose all endpoints(refresh,health,info...)
+  health:
+    livenessstate:
+      enabled: true
+    readystatestate:
+      enabled: true
+  endpoint:
+    health:
+      probes:
+        enabled: true
